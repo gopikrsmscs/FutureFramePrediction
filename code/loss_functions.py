@@ -1,11 +1,36 @@
 import tensorflow as tf
 import numpy as np
 
+def flow_loss(generated, ground_truth):
+    """
+    Computes the flow loss between the generated and ground truth flow maps.
+
+    Args:
+        generated: A dictionary containing the generated flow map.
+        ground_truth: A dictionary containing the ground truth flow map.
+
+    Returns:
+        The flow loss between the generated and ground truth flow maps.
+    """
+    return tf.reduce_mean(tf.abs(generated['flow'] - ground_truth['flow']))
+
 def intensity_loss(gen_frames, gt_frames, l_num):
-    return tf.reduce_mean(tf.abs((gen_frames - gt_frames) ** l_num))
+    diff = tf.abs(tf.math.pow(tf.abs(gen_frames - gt_frames), l_num))
+    return tf.reduce_mean(diff)
 
 def gradient_loss(gen_frames, gt_frames, alpha):
-    channels = gen_frames.get_shape().as_list()[-1]
+    """
+    Computes the gradient loss between the generated frames and the ground truth frames.
+
+    Args:
+        gen_frames: The generated frames tensor.
+        gt_frames: The ground truth frames tensor.
+        alpha: A scalar parameter to control the exponent used in the loss calculation.
+
+    Returns:
+        The gradient loss between the generated frames and the ground truth frames.
+    """
+    channels = gen_frames.shape[-1]
     pos = tf.constant(np.identity(channels), dtype=tf.float32)     # 3 x 3
     neg = -1 * pos
     filter_x = tf.expand_dims(tf.stack([neg, pos]), 0)  # [-1, 1]
@@ -21,8 +46,9 @@ def gradient_loss(gen_frames, gt_frames, alpha):
     grad_diff_x = tf.abs(gt_dx - gen_dx)
     grad_diff_y = tf.abs(gt_dy - gen_dy)
 
-    # condense into one tensor and avg
+    # condense into one tensor and average
     return tf.reduce_mean(grad_diff_x ** alpha + grad_diff_y ** alpha)
+
 
 def flow_loss(genrated, groud_truth):
     return tf.reduce_mean(tf.abs(genrated['flow'] - groud_truth['flow']))
